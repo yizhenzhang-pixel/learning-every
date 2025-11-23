@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learning Everything - AI 深度学习规划</title>
+
+  <!-- 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- 引入 React 和 ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- 引入 Babel 用于解析 JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- 自定义样式 -->
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      background-color: #F7F7F9;
+    }
+    /* 自定义滚动条 */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 20px;
+    }
+    /* 动画 */
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.4s ease-out forwards;
+    }
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    /* 隐藏未加载时的闪烁 */
+    #root:empty {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- 图标组件 (内嵌 SVG 以确保单文件运行) ---
+    const Icons = {
+      BookOpen: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+      CheckCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+      Clock: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+      Lightbulb: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2.4 1.5-3.8 0-2.7-2.2-4.9-5-4.9-2.7 0-4.9 2.2-4.9 4.9 0 1.4.5 2.8 1.5 3.8.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>,
+      Target: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+      RefreshCw: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+      ChevronRight: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="9 18 15 12 9 6"/></svg>,
+      Sparkles: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>,
+      Layout: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="9" y2="21"/></svg>,
+      ArrowRight: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
+      Loader2: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
+      AlertCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
+      MessageCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>,
+      X: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>,
+      Send: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+      Bot: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg>,
+      Quote: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>
+    };
+
+    // --- 工具函数：终极完美版 Markdown 渲染器 ---
+    const SimpleMarkdown = ({ content }) => {
+      if (!content) return null;
+
+      // 1. 行内解析器
+      const parseInline = (text) => {
+        if (!text) return null;
+        const parts = text.split(/(\*\*.*?\*\*|`[^`]+`|\$[^\$]+?\$)/g);
+
+        return parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+            return <strong key={i} className="font-bold text-slate-900">{part.slice(2, -2)}</strong>;
+          }
+          if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+            return <code key={i} className="bg-blue-50 px-1.5 py-0.5 rounded text-blue-600 font-mono text-sm mx-0.5">{part.slice(1, -1)}</code>;
+          }
+          if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+            const latex = part.slice(1, -1);
+            return (
+              <span key={i} className="inline-flex items-center align-baseline mx-0.5">
+                 <img
+                   src={`https://latex.codecogs.com/svg.latex?\\small&space;${encodeURIComponent(latex)}`}
+                   alt={latex}
+                   className="max-h-[1.3em] opacity-90"
+                   style={{ verticalAlign: '-2px' }}
+                 />
+              </span>
+            );
+          }
+          return part;
+        });
+      };
+
+      // 2. 表格渲染器
+      const renderTable = (rows, keyPrefix) => {
+        if (rows.length < 2) return null;
+        const headerRow = rows[0];
+        const headers = headerRow.split('|').filter(cell => cell.trim() !== '').map(cell => cell.trim());
+        const dataRows = rows.slice(2).map(row => {
+          return row.split('|').filter(cell => cell.trim() !== '').map(cell => cell.trim());
+        });
+
+        return (
+          <div key={keyPrefix} className="my-6 overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  {headers.map((header, i) => (
+                    <th key={i} className="px-4 py-3 font-semibold text-slate-700 whitespace-nowrap">
+                      {parseInline(header)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {dataRows.map((row, rowIndex) => (
+                  <tr key={rowIndex} className="hover:bg-slate-50/50 transition-colors">
+                    {row.map((cell, cellIndex) => (
+                      <td key={cellIndex} className="px-4 py-3 text-slate-600 leading-relaxed">
+                        {parseInline(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      };
+
+      // 3. 主解析逻辑
+      const lines = content.split('\n');
+      const elements = [];
+      let inCodeBlock = false;
+      let codeBlockContent = [];
+      let inTable = false;
+      let tableBuffer = [];
+      let inMathBlock = false;
+      let mathBlockContent = [];
+
+      const flushTable = (keyIndex) => {
+        if (tableBuffer.length > 0) {
+          elements.push(renderTable(tableBuffer, `table-${keyIndex}`));
+          tableBuffer = [];
+        }
+        inTable = false;
+      };
+
+      lines.forEach((line, index) => {
+        const trimmed = line.trimEnd();
+        const trimmedStart = line.trimStart();
+
+        if (trimmedStart.startsWith('```')) {
+          if (inTable) flushTable(index);
+          if (inMathBlock) return;
+          if (inCodeBlock) {
+            elements.push(
+              <div key={`code-${index}`} className="bg-slate-900 text-slate-50 p-4 rounded-xl my-4 font-mono text-sm overflow-x-auto shadow-sm border border-slate-800">
+                <pre>{codeBlockContent.join('\n')}</pre>
+              </div>
+            );
+            codeBlockContent = [];
+            inCodeBlock = false;
+          } else {
+            inCodeBlock = true;
+          }
+          return;
+        }
+        if (inCodeBlock) {
+          codeBlockContent.push(line);
+          return;
+        }
+        if (trimmedStart.startsWith('$$')) {
+          if (inTable) flushTable(index);
+          if (inMathBlock) {
+            const latex = mathBlockContent.join(' ');
+            elements.push(
+               <div key={`math-${index}`} className="my-6 flex justify-center overflow-x-auto py-2 bg-slate-50/50 rounded-lg">
+                 <img
+                   src={`https://latex.codecogs.com/svg.latex?\\large&space;${encodeURIComponent(latex)}`}
+                   alt={latex}
+                   className="max-w-full"
+                   style={{ minHeight: '20px' }}
+                 />
+               </div>
+            );
+            mathBlockContent = [];
+            inMathBlock = false;
+          } else {
+            if (trimmedStart.length > 2 && trimmedStart.endsWith('$$')) {
+                const latex = trimmedStart.slice(2, -2).trim();
+                elements.push(
+                  <div key={`math-${index}`} className="my-6 flex justify-center overflow-x-auto py-2 bg-slate-50/50 rounded-lg">
+                    <img
+                      src={`https://latex.codecogs.com/svg.latex?\\large&space;${encodeURIComponent(latex)}`}
+                      alt={latex}
+                      className="max-w-full"
+                      style={{ minHeight: '20px' }}
+                    />
+                  </div>
+                );
+            } else {
+                inMathBlock = true;
+                const contentAfter = trimmedStart.slice(2).trim();
+                if (contentAfter) mathBlockContent.push(contentAfter);
+            }
+          }
+          return;
+        }
+        if (inMathBlock) {
+          if (trimmedStart.endsWith('$$')) {
+            mathBlockContent.push(trimmedStart.slice(0, -2));
+            const latex = mathBlockContent.join(' ');
+            elements.push(
+               <div key={`math-${index}`} className="my-6 flex justify-center overflow-x-auto py-2 bg-slate-50/50 rounded-lg">
+                 <img
+                   src={`https://latex.codecogs.com/svg.latex?\\large&space;${encodeURIComponent(latex)}`}
+                   alt={latex}
+                   className="max-w-full"
+                   style={{ minHeight: '20px' }}
+                 />
+               </div>
+            );
+            mathBlockContent = [];
+            inMathBlock = false;
+          } else {
+            mathBlockContent.push(line);
+          }
+          return;
+        }
+        if (trimmedStart.startsWith('|')) {
+          inTable = true;
+          tableBuffer.push(line);
+          return;
+        } else {
+          if (inTable) {
+            flushTable(index);
+          }
+        }
+        if (!trimmed) {
+          elements.push(<div key={`gap-${index}`} className="h-3" />);
+          return;
+        }
+        const h1Match = trimmed.match(/^#\s+(.+)/);
+        if (h1Match) {
+          elements.push(<h1 key={index} className="text-3xl font-extrabold text-slate-900 mt-10 mb-6 leading-tight">{parseInline(h1Match[1])}</h1>);
+          return;
+        }
+        const h2Match = trimmed.match(/^##\s+(.+)/);
+        if (h2Match) {
+          elements.push(
+            <h2 key={index} className="text-xl font-bold text-slate-800 mt-8 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+              {parseInline(h2Match[1])}
+            </h2>
+          );
+          return;
+        }
+        const h3Match = trimmed.match(/^###\s+(.+)/);
+        if (h3Match) {
+          elements.push(
+            <h3 key={index} className="text-lg font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">
+              <div className="w-1.5 h-5 bg-blue-500 rounded-full flex-shrink-0" />
+              <span>{parseInline(h3Match[1])}</span>
+            </h3>
+          );
+          return;
+        }
+        const h4Match = trimmed.match(/^####\s+(.+)/);
+        if (h4Match) {
+          elements.push(
+            <h4 key={index} className="text-base font-bold text-slate-700 mt-4 mb-2 flex items-center gap-2">
+               <span className="text-blue-400 opacity-50">#</span> {parseInline(h4Match[1])}
+            </h4>
+          );
+          return;
+        }
+        const listMatch = trimmed.match(/^[-*]\s+(.+)/);
+        if (listMatch) {
+          elements.push(
+            <div key={index} className="flex items-start gap-3 ml-1 mb-2 group">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2.5 flex-shrink-0 group-hover:bg-blue-500 transition-colors" />
+              <div className="flex-1 text-slate-700 leading-relaxed">{parseInline(listMatch[1])}</div>
+            </div>
+          );
+          return;
+        }
+        const orderedListMatch = trimmed.match(/^(\d+)\.\s+(.+)/);
+        if (orderedListMatch) {
+          elements.push(
+            <div key={index} className="flex items-start gap-3 ml-1 mb-2">
+              <span className="font-bold text-slate-400 text-sm mt-1 min-w-[20px] text-right font-mono">{orderedListMatch[1]}.</span>
+              <div className="flex-1 text-slate-700 leading-relaxed">{parseInline(orderedListMatch[2])}</div>
+            </div>
+          );
+          return;
+        }
+        if (trimmed.startsWith('>')) {
+          const content = trimmed.replace(/^>\s?/, '');
+          elements.push(
+            <div key={index} className="my-4 pl-5 border-l-4 border-blue-300 bg-blue-50/50 py-3 pr-4 rounded-r-lg text-slate-700 italic relative">
+              <Icons.Quote className="absolute top-2 right-2 w-4 h-4 text-blue-200 opacity-50" />
+              {parseInline(content)}
+            </div>
+          );
+          return;
+        }
+        if (trimmed === '---' || trimmed === '***') {
+          elements.push(<hr key={index} className="my-8 border-slate-200" />);
+          return;
+        }
+        elements.push(
+          <p key={index} className="text-slate-700 leading-7 text-justify mb-3">
+            {parseInline(trimmed)}
+          </p>
+        );
+      });
+      if (inTable) flushTable('last');
+      return <div className="markdown-body max-w-none">{elements}</div>;
+    };
+
+    // --- API Functions ---
+    async function fetchStudyOutline(topic, apiKey) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const schema = {
+        type: "OBJECT",
+        properties: {
+          days: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                day: { type: "INTEGER" },
+                title: { type: "STRING" },
+                goals: { type: "ARRAY", items: { type: "STRING" } },
+              },
+              required: ["day", "title", "goals"]
+            }
+          }
+        }
+      };
+      const promptText = `
+        你是一位顶级课程架构师。请为主题：“${topic}” 设计一个 30 天学习大纲。
+        阶段规划：
+        - 第 1-5 天：基础/术语
+        - 第 6-15 天：核心原理/框架
+        - 第 16-25 天：实战应用/案例
+        - 第 26-30 天：复盘/前沿/整合
+        输出要求：仅生成 JSON 数据。包含每一天的 day(数字), title(标题), goals(2个简短目标)。
+      `;
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: { responseMimeType: "application/json", responseSchema: schema }
+          })
+        });
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        const data = await response.json();
+        const jsonContent = JSON.parse(data.candidates[0].content.parts[0].text);
+        return jsonContent.days;
+      } catch (error) {
+        console.error("Outline generation failed:", error);
+        throw error;
+      }
+    }
+
+    async function fetchDayContent(topic, dayInfo, apiKey) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const promptText = `
+        你是一位全球顶级教授，擅用比喻、故事，将抽象晦涩的知识讲得清晰生动、通俗易懂，请为主题“${topic}”的第 ${dayInfo.day} 天课程：“${dayInfo.title}” 撰写一份深度讲义。
+        【排版与公式严格要求】：
+        1. **公式禁止使用标题格式**：严禁使用 #, ##, ### 来表示公式。
+        2. **公式必须包裹**：独占一行的公式必须使用 $$公式$$ 包裹。行内公式必须使用 $公式$ 包裹。
+        3. **排版美观**：使用标准 Markdown。
+        4. **深度与篇幅**：内容详实，总字数 2000-3000 字左右（中文）。
+        【内容结构】：
+        请先判断
+        如果课程为文科:
+        引言、核心概念、案例分析、现实镜鉴、文献索引、哲学反思、总结与作业。
+        如果课程为理科:
+        引言、核心概念、数学推导、表格对比、代码/案例、文献索引、总结与作业。
+        直接输出 Markdown 内容，不要包含其他废话。
+      `;
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+        });
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+      } catch (error) {
+        console.error("Day content generation failed:", error);
+        throw error;
+      }
+    }
+
+    async function fetchChatResponse(history, topic, dayContext, apiKey) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const systemContext = `你是一位友好的 AI 导师。用户正学习“${topic}”，当前在第 ${dayContext?.day || 0} 天。请尽可能生动有趣地回答问题。`;
+      const contents = [
+        { role: "user", parts: [{ text: systemContext }] },
+        ...history.map(msg => ({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.text }] }))
+      ];
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents })
+        });
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+      } catch (error) { return "网络开小差了，请重试。"; }
+    }
+
+    // --- 逻辑处理 ---
+    function generateReviewSchedule(days) {
+      const schedule = [];
+      for (let d = 1; d <= days; d++) {
+        const reviewTargets = [d + 1, d + 3, d + 7, d + 15, d + 30].filter(x => x <= days);
+        schedule.push({ day: d, reviewTargets });
+      }
+      const reviewOnDay = Array.from({ length: days + 1 }, () => []);
+      schedule.forEach(({ day, reviewTargets }) => {
+        reviewTargets.forEach(rt => { reviewOnDay[rt].push(day); });
+      });
+      return { reviewOnDay };
+    }
+
+    function assemblePlan(outlineData) {
+      const totalDays = 30;
+      const { reviewOnDay } = generateReviewSchedule(totalDays);
+      const phases = [
+        { range: [1, 5], label: "地基期 · 基础概念", color: "text-blue-600 bg-blue-50" },
+        { range: [6, 15], label: "框架期 · 核心原理", color: "text-indigo-600 bg-indigo-50" },
+        { range: [16, 25], label: "应用期 · 实战演练", color: "text-purple-600 bg-purple-50" },
+        { range: [26, 30], label: "整合期 · 融会贯通", color: "text-emerald-600 bg-emerald-50" },
+      ];
+      const findPhase = (day) => phases.find(p => day >= p.range[0] && day <= p.range[1]) || phases[0];
+
+      return outlineData.map(dayData => {
+        const phaseObj = findPhase(dayData.day);
+        return {
+          ...dayData,
+          phase: phaseObj.label,
+          phaseColor: phaseObj.color,
+          reviewFromDays: reviewOnDay[dayData.day] || [],
+          isCompleted: false,
+          fullContent: null,
+          isLoadingContent: false
+        };
+      });
+    }
+
+    // --- 主组件 ---
+    function Learning30App() {
+      const [topic, setTopic] = useState("");
+      const [apiKey, setApiKey] = useState(() => {
+        if (typeof window !== "undefined") {
+          try {
+            return localStorage.getItem("le_gemini_api_key") || "";
+          } catch (e) {
+            return "";
+          }
+        }
+        return "";
+      });
+      const [plan, setPlan] = useState([]);
+      const [selectedDay, setSelectedDay] = useState(null);
+      const [appState, setAppState] = useState("input");
+      const [errorMessage, setErrorMessage] = useState("");
+      const [chatHistory, setChatHistory] = useState([]);
+      const [chatInput, setChatInput] = useState("");
+      const [isChatLoading, setIsChatLoading] = useState(false);
+      const chatEndRef = useRef(null);
+
+      useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatHistory]);
+
+      useEffect(() => {
+        if (typeof window !== "undefined" && apiKey) {
+          try {
+            localStorage.setItem("le_gemini_api_key", apiKey);
+          } catch (e) {}
+        }
+      }, [apiKey]);
+
+      const handleGenerateOutline = async () => {
+        if (!topic.trim() || !apiKey.trim()) return;
+        setAppState("loading_outline");
+        setErrorMessage("");
+        try {
+          const rawOutline = await fetchStudyOutline(topic.trim(), apiKey);
+          const fullPlan = assemblePlan(rawOutline);
+          setPlan(fullPlan);
+          const firstDay = fullPlan[0];
+          setSelectedDay(firstDay);
+          setAppState("dashboard");
+          setChatHistory([{ role: 'model', text: `你好！我是你的 AI 学习导师。大纲已生成，点击日历即可开始深度学习“${topic.trim()}”。` }]);
+          loadDayContent(firstDay, fullPlan);
+        } catch (err) {
+          setErrorMessage("生成大纲失败，请重试。");
+          setAppState("error");
+        }
+      };
+
+      const loadDayContent = async (dayItem, currentPlan = plan) => {
+        if (!apiKey.trim()) return;
+        if (dayItem.fullContent || dayItem.isLoadingContent) return;
+        const updatedPlanLoading = currentPlan.map(p => p.day === dayItem.day ? { ...p, isLoadingContent: true } : p);
+        setPlan(updatedPlanLoading);
+        if (selectedDay?.day === dayItem.day) { setSelectedDay({ ...dayItem, isLoadingContent: true }); }
+        try {
+          const content = await fetchDayContent(topic, dayItem, apiKey);
+          const updatedPlanDone = updatedPlanLoading.map(p => p.day === dayItem.day ? { ...p, fullContent: content, isLoadingContent: false } : p);
+          setPlan(updatedPlanDone);
+          setSelectedDay(prev => prev && prev.day === dayItem.day ? { ...prev, fullContent: content, isLoadingContent: false } : prev);
+        } catch (err) {
+          const updatedPlanError = updatedPlanLoading.map(p => p.day === dayItem.day ? { ...p, isLoadingContent: false } : p);
+          setPlan(updatedPlanError);
+          if (selectedDay?.day === dayItem.day) { setSelectedDay({ ...dayItem, isLoadingContent: false }); }
+        }
+      };
+
+      const handleSelectDay = (dayItem) => {
+        setSelectedDay(dayItem);
+        const currentDayState = plan.find(p => p.day === dayItem.day);
+        if (currentDayState && !currentDayState.fullContent && !currentDayState.isLoadingContent) {
+          loadDayContent(currentDayState);
+        }
+      };
+
+      const toggleDayComplete = (dayIndex) => {
+        const newPlan = [...plan];
+        newPlan[dayIndex].isCompleted = !newPlan[dayIndex].isCompleted;
+        setPlan(newPlan);
+      };
+
+      const handleChatSubmit = async (e) => {
+        e.preventDefault();
+        if (!chatInput.trim() || isChatLoading || !apiKey.trim()) return;
+        const userMsg = { role: 'user', text: chatInput };
+        const newHistory = [...chatHistory, userMsg];
+        setChatHistory(newHistory);
+        setChatInput("");
+        setIsChatLoading(true);
+        try {
+          const res = await fetchChatResponse(newHistory, topic, selectedDay, apiKey);
+          setChatHistory(prev => [...prev, { role: 'model', text: res }]);
+        } catch (e) {
+          setChatHistory(prev => [...prev, { role: 'model', text: "调用失败，请检查 API Key 或稍后重试。" }]);
+        }
+        setIsChatLoading(false);
+      };
+
+      const daysCompleted = plan.filter(d => d.isCompleted).length;
+      const progress = plan.length ? Math.round((daysCompleted / plan.length) * 100) : 0;
+
+      // --- Views ---
+      if (appState !== "dashboard") {
+        return (
+          <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-sans text-slate-800 relative overflow-hidden">
+             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+              <div className="absolute -top-20 -left-20 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+              <div className="absolute top-0 -right-20 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+            </div>
+            <div className="max-w-2xl w-full text-center space-y-8 relative z-10">
+              <div className="space-y-2">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-lg shadow-blue-200 mb-4">
+                  <Icons.BookOpen className="w-8 h-8 text-white" />
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight text-slate-900">Learning Everything</h1>
+                <p className="text-lg text-slate-500">深度学习规划 · 3000字+ 讲义生成 · 艾宾浩斯复习</p>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && appState !== "loading_outline" && handleGenerateOutline()}
+                    disabled={appState === "loading_outline"}
+                    placeholder="输入想深入学习的领域（如：微观经济学、React 原理）"
+                    className="flex-1 px-4 py-3 text-base bg-slate-50 border border-slate-200 rounded-xl outline-none placeholder:text-slate-400 text-slate-800 disabled:opacity-50"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value.trim())}
+                    placeholder="在此输入你的 Gemini API Key（仅保存在本地浏览器）"
+                    className="flex-1 px-4 py-3 text-base bg-slate-50 border border-slate-200 rounded-xl outline-none placeholder:text-slate-400 text-slate-800"
+                    autoComplete="off"
+                  />
+                </div>
+                <button
+                  onClick={handleGenerateOutline}
+                  disabled={!topic.trim() || !apiKey.trim() || appState === "loading_outline"}
+                  className="w-full px-8 py-3 bg-slate-900 hover:bg-blue-600 text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {appState === "loading_outline"
+                    ? <><Icons.Loader2 className="w-5 h-5 animate-spin" /> 构建大纲</>
+                    : <>生成学习路径 <Icons.ArrowRight className="w-4 h-4" /></>}
+                </button>
+              </div>
+
+              <div className="text-sm text-slate-400">
+                推荐尝试：复杂系统理论 / 商业模式分析 / 创意写作进阶 · 提示：API Key 仅保存在你的浏览器本地
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-[#F7F7F9] text-slate-800 font-sans flex flex-col relative">
+          <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">LE</div>
+              <div><h1 className="text-sm font-bold text-slate-900">{topic}</h1><p className="text-xs text-slate-500">Systematic Learning Path</p></div>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <button onClick={() => setAppState("input")} className="text-slate-500 hover:text-slate-900">重置</button>
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full"><Icons.Clock className="w-3.5 h-3.5 text-slate-500" /><span className="text-xs font-medium text-slate-600">深度阅读约 15 分钟/天</span></div>
+            </div>
+          </header>
+          <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-64px)]">
+            <aside className="lg:col-span-3 flex flex-col min-h-0 h-full">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+                <div className="p-4 border-b border-slate-100 bg-slate-50"><h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Course Outline</h3></div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                  {plan.map((item) => (
+                    <button key={item.day} onClick={() => handleSelectDay(item)} className={`w-full text-left px-3 py-3 rounded-xl transition-all flex items-start gap-3 ${selectedDay?.day === item.day ? "bg-blue-50 ring-1 ring-blue-100 shadow-sm" : "hover:bg-slate-50"}`}>
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 transition-colors ${item.isCompleted ? "bg-green-500 text-white" : selectedDay?.day === item.day ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>
+                        {item.isCompleted ? <Icons.CheckCircle className="w-3.5 h-3.5" /> : item.day}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className={`text-[10px] font-medium px-1.5 rounded-sm ${item.phaseColor}`}>{item.phase.split(' · ')[0]}</span>
+                          {item.reviewFromDays.length > 0 && <span className="flex items-center text-[10px] text-amber-600 bg-amber-50 px-1 rounded-full"><Icons.RefreshCw className="w-2.5 h-2.5 mr-1" />{item.reviewFromDays.length}</span>}
+                        </div>
+                        <p className={`text-sm truncate font-medium ${selectedDay?.day === item.day ? "text-blue-900" : "text-slate-600"}`}>{item.title}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </aside>
+            <section className="lg:col-span-6 flex flex-col min-h-0 h-full">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden relative">
+                {selectedDay ? (
+                  <>
+                    <div className="p-6 border-b border-slate-100 bg白 z-10 flex-shrink-0">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${selectedDay.phaseColor}`}>PHASE {Math.ceil(selectedDay.day / 5)}: {selectedDay.phase}</span>
+                        <span className="text-slate-400 text-xs font-mono">DAY {selectedDay.day.toString().padStart(2, '0')}</span>
+                      </div>
+                      <h2 className="text-2xl font-bold text-slate-900 leading-tight mb-4">{selectedDay.title}</h2>
+                      <div className="flex gap-4">{selectedDay.goals.map((g, i) => <div key={i} className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-100"><Icons.Target className="w-3 h-3 text-blue-500" /> {g}</div>)}</div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-white">
+                      {selectedDay.fullContent ? (
+                        <div className="animate-fade-in pb-10">
+                          <SimpleMarkdown content={selectedDay.fullContent} />
+                          <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col items-center gap-4">
+                            <p className="text-slate-500 text-sm">已完成今日深度阅读？</p>
+                            <button onClick={() => toggleDayComplete(selectedDay.day - 1)} className={`flex items-center gap-2 px-8 py-3 rounded-full font-medium transition-all shadow-sm hover:scale-105 ${plan[selectedDay.day - 1].isCompleted ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-slate-900 text白 hover:bg-blue-600"}`}>
+                              {plan[selectedDay.day - 1].isCompleted ? <><Icons.CheckCircle className="w-5 h-5" /> 今日已打卡</> : "完成学习并打卡"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-6">
+                          <div className="relative w-16 h-16">
+                            <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                            <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                            <Icons.Sparkles className="absolute inset-0 m-auto w-6 h-6 text-blue-500 animate-pulse" />
+                          </div>
+                          <div className="space-y-2 max-w-sm"><h3 className="text-lg font-semibold text-slate-900">正在撰写深度讲义...</h3><p className="text-sm text-slate-500">AI 正在为您实时生成约 3000 字的详细课程内容，包含案例分析与实操步骤，请稍候（约需 10-20 秒）。</p></div>
+                          <div className="w-full max-w-md space-y-3 opacity-50"><div className="h-4 bg-slate-100 rounded w-3/4 mx-auto animate-pulse"></div><div className="h-4 bg-slate-100 rounded w-full animate-pulse delay-75"></div><div className="h-4 bg-slate-100 rounded w-5/6 mx-auto animate-pulse delay-150"></div></div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-slate-400 bg-slate-50/50">请在左侧选择一天开始学习</div>
+                )}
+              </div>
+            </section>
+            <aside className="lg:col-span-3 flex flex-col gap-6 min-h-0 h-full">
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex-shrink-0">
+                <div className="flex justify-between items-center mb-4"><h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Progress</h3><span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{daysCompleted}/{plan.length} Days</span></div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} /></div>
+              </div>
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex-shrink-0 relative overflow-hidden">
+                 <div className="absolute top-0right-0 w-16 h-16 bg-amber-50 rounded-bl-full -mr-4 -mt-4" />
+                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 relative z-10">Review Tasks</h3>
+                 {selectedDay?.reviewFromDays.length > 0 ? (
+                  <div className="space-y-2 relative z-10 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                    {selectedDay.reviewFromDays.map((d) => (
+                      <button key={d} onClick={() => handleSelectDay(plan.find(p => p.day === d))} className="w-full bg-amber-50/50 hover:bg-amber-100 border border-amber-100 p-2 rounded-lg flex items-center gap-3 transition-colors text-left">
+                        <div className="w-6 h-6 bg-white rounded flex items-center justify-center text-[10px] font-bold text-amber-600 shadow-sm border border-amber-100">{d}</div>
+                        <span className="text-xs text-slate-700 truncate flex-1">{plan[d-1]?.title}</span>
+                        <Icons.ArrowRight className="w-3 h-3 text-amber-400" />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">今日无复习任务</div>
+                )}
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex-1 flex flex-col overflow-hidden min-h-[300px]">
+                 <div className="p-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2 text-slate-700"><Icons.Bot className="w-4 h-4 text-blue-600" /><span className="text-xs font-bold uppercase">AI Tutor</span></div>
+                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white custom-scrollbar">
+                    {chatHistory.map((msg, idx) => (
+                       <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[90%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-slate-900 text-white rounded-br-sm' : 'bg-slate-50 border border-slate-100 text-slate-700 rounded-bl-sm'}`}>{msg.text}</div>
+                       </div>
+                    ))}
+                    <div ref={chatEndRef} />
+                 </div>
+                 <form onSubmit={handleChatSubmit} className="p-3 border-t border-slate-100 flex gap-2 bg-white">
+                    <input value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="有疑问？问问 AI..." className="flex-1 bg-slate-100 border-none rounded-full px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200 transition-all" />
+                    <button disabled={isChatLoading || !chatInput.trim()} type="submit" className="w-8 h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-colors">
+                      {isChatLoading ? <Icons.Loader2 className="w-3 h-3 animate-spin" /> : <Icons.Send className="w-3 h-3" />}
+                    </button>
+                 </form>
+              </div>
+            </aside>
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<Learning30App />);
+  </script>
+</body>
+</html>
